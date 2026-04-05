@@ -1,6 +1,6 @@
 {
   "keywords": {
-    "customs": ["mã hs", "hs code", "thuế nhập", "thuế xuất", "phân loại", "ecus", "acfta", "c/o", "xuất xứ", "biểu thuế"],
+    "customs": ["mã hs", "hs code", "thuế nhập", "thuế xuất", "phân loại", "ecus", "acfta", "c/o", "xuất xứ", "biểu thuế", "nhập khẩu", "xuất khẩu", "tra mã", "mã số"],
     "pricing": ["báo giá", "chi phí", "cước", "phí dịch vụ", "giá bao nhiêu", "phí ủy thác"],
     "care": ["xin chào", "hello", "hi", "cảm ơn", "thanks", "giúp đỡ", "help"],
     "regulation": ["thông tư", "nghị định", "quy định", "luật hải quan", "văn bản", "pháp luật"]
@@ -8,9 +8,9 @@
   "thresholds": {
     "keywordMatchConfidence": 0.95,
     "shortMessageConfidence": 0.85,
-    "shortMessageMaxWords": 5,
+    "shortMessageMaxWords": 10,
     "fallbackConfidence": 0.6
   },
-  "fallbackAgent": "care",
+  "fallbackAgent": "customs",
   "defaultShortMessageAgent": "customs"
 }
