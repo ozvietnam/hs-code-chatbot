@@ -64,13 +64,16 @@ export default async function handler(req, res) {
     try {
       result = await agentFn({ message, history, file, apiKey });
     } catch (agentError) {
-      // Agent-level fallback: if specific agent fails, try care agent
       console.error(`Agent [${effectiveIntent}] failed:`, agentError.message);
       if (effectiveIntent !== 'care') {
-        result = await AGENTS.care({ message, history, apiKey });
-        result.debug = {
-          ...result.debug,
-          fallback: { from: effectiveIntent, error: agentError.message },
+        // Return error message visible to user instead of silent care fallback
+        result = {
+          reply: `⚠️ **Lỗi xử lý yêu cầu**\n\nHệ thống phân tích hải quan gặp sự cố khi xử lý câu hỏi của bạn.\n\n**Chi tiết:** ${agentError.message}\n\nVui lòng thử lại hoặc mô tả hàng hóa chi tiết hơn.`,
+          debug: {
+            agent: effectiveIntent,
+            error: agentError.message,
+            fallback: false,
+          },
         };
       } else {
         throw agentError;
