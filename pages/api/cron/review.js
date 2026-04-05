@@ -1,5 +1,6 @@
 import { reviewBatch } from '../../../lib/agents/librarianAgent';
 import { getKnowledgeStats } from '../../../lib/stores/knowledgeStore';
+import { consumeProposals } from '../../../lib/stores/sessionStore';
 
 /**
  * Cron: Librarian Review Pipeline
@@ -19,8 +20,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Proposals can come from POST body (from extract.js) or be fetched from KV
-    const proposals = req.body?.proposals || [];
+    // Consume proposals stored by extract cron in Redis
+    const proposals = await consumeProposals();
 
     if (proposals.length === 0) {
       const stats = await getKnowledgeStats();

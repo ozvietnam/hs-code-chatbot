@@ -1,4 +1,4 @@
-import { listSessions, getSessionMessages, markSessionExtracted } from '../../../lib/stores/sessionStore';
+import { listSessions, getSessionMessages, markSessionExtracted, storeProposals } from '../../../lib/stores/sessionStore';
 import { extractInsights } from '../../../lib/agents/extractorAgent';
 
 /**
@@ -68,8 +68,12 @@ export default async function handler(req, res) {
 
     log.push({ step: 'summary', totalInsights, proposalCount: allProposals.length });
 
-    // Step 3: Store proposals (trigger review in next cron)
-    // For now, return proposals — review.js will process them
+    // Step 3: Store proposals in Redis for review cron to consume
+    if (allProposals.length > 0) {
+      await storeProposals(allProposals);
+      log.push({ step: 'store_proposals', count: allProposals.length });
+    }
+
     return res.status(200).json({
       success: true,
       sessionsProcessed: eligibleSessions.length,

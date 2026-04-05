@@ -131,9 +131,21 @@ function NewChatIcon() {
 }
 
 // --- Action Buttons for Bot Messages ---
-function MessageActions({ content, onRetry }) {
+function MessageActions({ content, onRetry, sessionId, messageIndex }) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState(null);
+
+  function handleFeedback(rating) {
+    const newRating = feedback === rating ? null : rating;
+    setFeedback(newRating);
+    if (newRating && sessionId) {
+      fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, messageIndex, rating: newRating }),
+      }).catch(() => {});
+    }
+  }
 
   function handleCopy() {
     // Strip HTML tags for plain text copy
@@ -156,14 +168,14 @@ function MessageActions({ content, onRetry }) {
       )}
       <button
         className={`msg-action-btn ${feedback === 'up' ? 'active-green' : ''}`}
-        onClick={() => setFeedback(f => f === 'up' ? null : 'up')}
+        onClick={() => handleFeedback('up')}
         title="T\u1ED1t"
       >
         <span style={{ fontSize: 13 }}>{feedback === 'up' ? '\uD83D\uDC4D' : '\uD83D\uDC4D'}</span>
       </button>
       <button
         className={`msg-action-btn ${feedback === 'down' ? 'active-red' : ''}`}
-        onClick={() => setFeedback(f => f === 'down' ? null : 'down')}
+        onClick={() => handleFeedback('down')}
         title="Ch\u01B0a t\u1ED1t"
       >
         <span style={{ fontSize: 13 }}>{feedback === 'down' ? '\uD83D\uDC4E' : '\uD83D\uDC4E'}</span>
@@ -413,7 +425,7 @@ function StreamingText({ content, onComplete, scrollRef }) {
 }
 
 // --- Message Bubble ---
-function MessageBubble({ role, content, debug, file, isStreaming, onStreamComplete, scrollRef, onRetry }) {
+function MessageBubble({ role, content, debug, file, isStreaming, onStreamComplete, scrollRef, onRetry, sessionId, messageIndex }) {
   const isUser = role === 'user';
 
   if (isUser) {
@@ -464,7 +476,7 @@ function MessageBubble({ role, content, debug, file, isStreaming, onStreamComple
           )}
         </div>
       </div>
-      {!isStreaming && <MessageActions content={content} onRetry={onRetry} />}
+      {!isStreaming && <MessageActions content={content} onRetry={onRetry} sessionId={sessionId} messageIndex={messageIndex} />}
       {!isStreaming && debug && <DebugPanel debug={debug} />}
     </div>
   );
@@ -833,6 +845,8 @@ export default function ChatUI({ onDebugUpdate, onStatusChange, onNewChat }) {
             onStreamComplete={() => setStreamingIdx(-1)}
             scrollRef={messagesEndRef}
             onRetry={msg.role === 'assistant' ? () => handleRetry(i) : undefined}
+            sessionId={sessionId.current}
+            messageIndex={i}
           />
         ))}
 
