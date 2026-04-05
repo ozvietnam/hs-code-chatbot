@@ -52,24 +52,119 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// --- Markdown formatter (sanitized) ---
+// --- Expert-grade markdown formatter ---
 function formatMessage(text) {
-  const html = text
-    .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)*)/g, (match, header, body) => {
-      const headers = header.split('|').filter(Boolean)
-        .map(h => `<th>${h.trim()}</th>`).join('');
-      const rows = body.trim().split('\n').map(row => {
-        const cells = row.split('|').filter(Boolean)
-          .map(c => `<td>${c.trim()}</td>`).join('');
-        return `<tr>${cells}</tr>`;
-      }).join('');
-      return `<div class="table-scroll-wrapper"><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
-    })
+  // Split into lines for block-level processing
+  const lines = text.split('\n');
+  const processed = [];
+  let inList = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // HS code verdict line: 🎯 **XXXX.XX.XX** — ...
+    if (/^🎯/.test(line)) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code-primary">$1</span>');
+      line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      processed.push(`<div class="verdict-box">${line}</div>`);
+      continue;
+    }
+
+    // Tax line: Thuế: MFN X% | ACFTA X% | VAT X%
+    if (/^Thu[eế]:/i.test(line) || /MFN.*ACFTA.*VAT/i.test(line)) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      // Highlight tax rates
+      line = line.replace(/(\d+(?:\.\d+)?%)/g, '<span class="tax-rate">$1</span>');
+      line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      processed.push(`<div class="tax-line">${line}</div>`);
+      continue;
+    }
+
+    // Source citation: 📌 Căn cứ:
+    if (/^📌/.test(line)) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      line = formatInline(line);
+      processed.push(`<div class="citation">${line}</div>`);
+      continue;
+    }
+
+    // Discovery alert: ⚡ Lưu ý quan trọng / ⚠️
+    if (/^[⚡⚠️]/.test(line) && /[Ll]ưu ý|quan trọng|thay đổi|ORANGE|RED/i.test(line)) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      line = formatInline(line);
+      processed.push(`<div class="discovery-alert">${line}</div>`);
+      continue;
+    }
+
+    // Section headers: 🔍 / 💡 / ❓ / numbered items with emoji
+    if (/^[🔍💡❓🎯📊📋📦💰📝📜⚠️🏭]/.test(line) && line.length > 5) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      line = formatInline(line);
+      processed.push(`<div class="section-header">${line}</div>`);
+      continue;
+    }
+
+    // Numbered list items with HS codes: 1. **XXXX.XX.XX** — ...
+    if (/^\d+\.\s+\*\*\d{4}/.test(line)) {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code">$1</span>');
+      line = formatInline(line);
+      processed.push(`<div class="hs-option">${line}</div>`);
+      continue;
+    }
+
+    // Follow-up suggestion: → "text" or * "text"
+    if (/^\s*[→►•\-\*]\s*"/.test(line) || /^\s*[→►]\s/.test(line)) {
+      if (!inList) { processed.push('<ul class="followup-list">'); inList = true; }
+      line = line.replace(/^\s*[→►•\-\*]\s*/, '');
+      line = formatInline(line);
+      processed.push(`<li class="followup-item">${line}</li>`);
+      continue;
+    }
+
+    // Bullet list: - **XXXX** or * text
+    if (/^\s*[\-\*]\s+/.test(line)) {
+      if (!inList) { processed.push('<ul class="expert-list">'); inList = true; }
+      line = line.replace(/^\s*[\-\*]\s+/, '');
+      // Highlight HS codes in bullets
+      line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code">$1</span>');
+      line = formatInline(line);
+      processed.push(`<li>${line}</li>`);
+      continue;
+    }
+
+    // Close open list if normal line
+    if (inList && line.trim() !== '') { processed.push('</ul>'); inList = false; }
+
+    // Empty line = paragraph break
+    if (line.trim() === '') {
+      if (inList) { processed.push('</ul>'); inList = false; }
+      processed.push('<div class="spacer"></div>');
+      continue;
+    }
+
+    // Default: inline formatting
+    line = formatInline(line);
+    processed.push(`<div>${line}</div>`);
+  }
+
+  if (inList) processed.push('</ul>');
+
+  const html = processed.join('');
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['div', 'span', 'strong', 'em', 'code', 'ul', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br'],
+    ALLOWED_ATTR: ['class'],
+  });
+}
+
+function formatInline(line) {
+  return line
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br/>');
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS: ['table', 'thead', 'tbody', 'tr', 'th', 'td', 'strong', 'em', 'code', 'br', 'div'], ALLOWED_ATTR: ['class'] });
+    // Highlight standalone HS codes: 8516.60.90 or 8516.60
+    .replace(/(?<!\d)((\d{4})\.(\d{2})(?:\.(\d{2}))?)(?!\d)/g, '<span class="hs-code">$1</span>');
 }
 
 // --- Icons ---
