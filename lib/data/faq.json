@@ -1,0 +1,26 @@
+[
+  {
+    "question": "Chatbot này làm được gì?",
+    "answer": "Chatbot hỗ trợ: (1) Tra cứu mã HS và thuế suất nhập khẩu, (2) Báo giá dịch vụ khai báo hải quan, cước tàu, ủy thác, (3) Tra cứu văn bản pháp luật hải quan, (4) Hỗ trợ chung về nghiệp vụ xuất nhập khẩu."
+  },
+  {
+    "question": "Làm sao để tra mã HS?",
+    "answer": "Bạn chỉ cần mô tả hàng hóa bằng tiếng Việt, kèm thông tin: tên sản phẩm, chức năng, vật liệu, công dụng. Chatbot sẽ tự động tra cứu và phân tích mã HS phù hợp nhất."
+  },
+  {
+    "question": "Có thể gửi ảnh sản phẩm không?",
+    "answer": "Có! Bạn có thể đính kèm ảnh sản phẩm, invoice, packing list hoặc file PDF. Chatbot sẽ nhận diện sản phẩm từ file và tra mã HS."
+  },
+  {
+    "question": "Thuế suất có chính xác không?",
+    "answer": "Thuế suất được tra từ Biểu thuế 2026 chính thức. Tuy nhiên, đây là tham khảo — bạn nên xác minh lại với cơ quan hải quan hoặc đại lý chính thức trước khi khai báo."
+  },
+  {
+    "question": "C/O Form E là gì?",
+    "answer": "C/O Form E là Giấy chứng nhận xuất xứ hàng hóa ASEAN-Trung Quốc (ACFTA). Hàng có C/O Form E hợp lệ được hưởng thuế ưu đãi ACFTA, thường thấp hơn nhiều so với thuế MFN."
+  },
+  {
+    "question": "Dịch vụ của công ty bao gồm gì?",
+    "answer": "Công ty cung cấp: khai báo hải quan, xin giấy phép nhập khẩu, đại lý cước tàu biển, ủy thác nhập khẩu, tư vấn C/O và thuế suất ưu đãi."
+  }
+]

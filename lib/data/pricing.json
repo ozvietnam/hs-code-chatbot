@@ -1,0 +1,57 @@
+{
+  "company": "Công ty TNHH Dịch vụ Hải quan [Tên công ty]",
+  "updated": "2026-04-01",
+  "currency": "VND",
+  "services": [
+    {
+      "id": "customs_declaration",
+      "name": "Khai báo hải quan",
+      "description": "Dịch vụ khai báo thủ tục hải quan xuất nhập khẩu",
+      "pricing": [
+        { "type": "Tờ khai nhập khẩu (hàng thông thường)", "price": 1500000, "unit": "tờ khai" },
+        { "type": "Tờ khai nhập khẩu (hàng kiểm tra chuyên ngành)", "price": 2500000, "unit": "tờ khai" },
+        { "type": "Tờ khai xuất khẩu", "price": 1200000, "unit": "tờ khai" },
+        { "type": "Tờ khai tạm nhập - tái xuất", "price": 2000000, "unit": "tờ khai" }
+      ],
+      "notes": "Giá chưa bao gồm phí kiểm hóa, phí nâng hạ container, phí lưu bãi"
+    },
+    {
+      "id": "sea_freight",
+      "name": "Cước tàu biển (đại lý)",
+      "description": "Dịch vụ booking cước tàu biển nhập/xuất",
+      "pricing": [
+        { "type": "FCL 20' - Trung Quốc → Hải Phòng", "price": 800, "unit": "USD/cont", "note": "Giá tham khảo, thay đổi theo hãng tàu" },
+        { "type": "FCL 40' - Trung Quốc → Hải Phòng", "price": 1200, "unit": "USD/cont", "note": "Giá tham khảo" },
+        { "type": "FCL 20' - Trung Quốc → HCM", "price": 900, "unit": "USD/cont", "note": "Giá tham khảo" },
+        { "type": "FCL 40' - Trung Quốc → HCM", "price": 1400, "unit": "USD/cont", "note": "Giá tham khảo" },
+        { "type": "LCL - Trung Quốc → Việt Nam", "price": 45, "unit": "USD/CBM", "note": "Tối thiểu 1 CBM" }
+      ],
+      "notes": "Cước tàu thay đổi theo mùa và hãng tàu. Liên hệ để có giá chính xác nhất."
+    },
+    {
+      "id": "import_delegation",
+      "name": "Ủy thác nhập khẩu",
+      "description": "Dịch vụ ủy thác nhập khẩu trọn gói",
+      "pricing": [
+        { "type": "Phí ủy thác (tính trên trị giá hàng)", "price": "1.5-3%", "unit": "trị giá CIF", "note": "Tùy loại hàng, tối thiểu 5.000.000 VND" },
+        { "type": "Phí quản lý hồ sơ", "price": 3000000, "unit": "lô hàng" }
+      ],
+      "notes": "Bao gồm: mở L/C, khai báo HQ, vận chuyển nội địa. Chưa bao gồm thuế và phí nhà nước."
+    },
+    {
+      "id": "consulting",
+      "name": "Tư vấn nghiệp vụ hải quan",
+      "description": "Tư vấn phân loại HS, C/O, kiểm tra chuyên ngành",
+      "pricing": [
+        { "type": "Tư vấn phân loại mã HS (1 mặt hàng)", "price": 500000, "unit": "mặt hàng" },
+        { "type": "Tư vấn trọn gói (dự án)", "price": "Thỏa thuận", "unit": "dự án" }
+      ],
+      "notes": "Miễn phí tư vấn sơ bộ qua chatbot. Phí áp dụng cho tư vấn chuyên sâu có báo cáo."
+    }
+  ],
+  "general_notes": [
+    "Giá trên là tham khảo, có thể thay đổi tùy thời điểm",
+    "Liên hệ hotline để nhận báo giá chính thức",
+    "Ưu đãi cho khách hàng thường xuyên và lô hàng lớn"
+  ]
+}

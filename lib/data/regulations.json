@@ -1,0 +1,60 @@
+[
+  {
+    "id": "luat_hq_2014",
+    "type": "Luật",
+    "number": "54/2014/QH13",
+    "name": "Luật Hải quan 2014",
+    "summary": "Luật cơ bản quy định về hải quan, thủ tục hải quan, kiểm tra giám sát hải quan",
+    "key_topics": ["thủ tục hải quan", "quyền nghĩa vụ", "kiểm tra giám sát"]
+  },
+  {
+    "id": "tt38_2015",
+    "type": "Thông tư",
+    "number": "38/2015/TT-BTC",
+    "name": "Thông tư 38/2015/TT-BTC về thủ tục hải quan",
+    "amended_by": "39/2018/TT-BTC",
+    "summary": "Quy định chi tiết thủ tục hải quan, kiểm tra giám sát hải quan, thuế XNK, quản lý thuế",
+    "key_topics": ["thủ tục khai báo", "kiểm tra hồ sơ", "kiểm tra thực tế", "thuế XNK", "ân hạn thuế"]
+  },
+  {
+    "id": "tt39_2018",
+    "type": "Thông tư",
+    "number": "39/2018/TT-BTC",
+    "name": "Thông tư 39/2018/TT-BTC sửa đổi TT38",
+    "summary": "Sửa đổi, bổ sung một số điều của TT 38/2015/TT-BTC",
+    "key_topics": ["thủ tục khai báo", "VNACCS/VCIS", "chế độ ưu tiên"]
+  },
+  {
+    "id": "nd08_2015",
+    "type": "Nghị định",
+    "number": "08/2015/NĐ-CP",
+    "name": "Nghị định 08/2015/NĐ-CP hướng dẫn Luật Hải quan",
+    "amended_by": "59/2018/NĐ-CP",
+    "summary": "Quy định chi tiết thi hành một số điều của Luật Hải quan",
+    "key_topics": ["thủ tục hải quan điện tử", "kiểm tra sau thông quan", "doanh nghiệp ưu tiên"]
+  },
+  {
+    "id": "nd134_2016",
+    "type": "Nghị định",
+    "number": "134/2016/NĐ-CP",
+    "name": "Nghị định 134/2016/NĐ-CP về thuế XNK",
+    "summary": "Quy định chi tiết thuế xuất khẩu, thuế nhập khẩu",
+    "key_topics": ["biểu thuế", "thuế suất ưu đãi", "miễn giảm thuế", "hoàn thuế"]
+  },
+  {
+    "id": "tt14_2015",
+    "type": "Thông tư",
+    "number": "14/2015/TT-BTC",
+    "name": "Thông tư 14/2015/TT-BTC về phân loại hàng hóa",
+    "summary": "Hướng dẫn phân loại hàng hóa, áp dụng mức thuế đối với hàng hóa XNK",
+    "key_topics": ["phân loại HS", "GIR", "xác định trước mã số", "khiếu nại phân loại"]
+  },
+  {
+    "id": "cv1810_2022",
+    "type": "Công văn",
+    "number": "1810/TCHQ-TXNK",
+    "name": "CV 1810/TCHQ-TXNK năm 2022 về chú giải HS",
+    "summary": "Hướng dẫn áp dụng chú giải HS 2022 cho biểu thuế Việt Nam",
+    "key_topics": ["chú giải HS 2022", "SEN AHTN", "biểu thuế 2022"]
+  }
+]

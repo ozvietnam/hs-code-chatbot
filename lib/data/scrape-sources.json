@@ -1,0 +1,18 @@
+[
+  {
+    "id": "customs_gov_vn",
+    "name": "Tổng cục Hải quan",
+    "url": "https://www.customs.gov.vn/index.jsp?pageId=3&cid=37",
+    "type": "regulation",
+    "frequency": "daily",
+    "enabled": true
+  },
+  {
+    "id": "mof_gov_vn",
+    "name": "Bộ Tài chính - Văn bản pháp luật",
+    "url": "https://www.mof.gov.vn/webcenter/portal/vclvcstc/r/m/ncvbpl",
+    "type": "regulation",
+    "frequency": "daily",
+    "enabled": false
+  }
+]

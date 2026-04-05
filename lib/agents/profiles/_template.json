@@ -1,0 +1,14 @@
+{
+  "name": "Tên nhân viên / chức danh",
+  "role": "Mô tả vai trò ngắn gọn",
+  "goals": [
+    "Mục tiêu 1",
+    "Mục tiêu 2",
+    "Mục tiêu 3"
+  ],
+  "knowledge_sources": ["file_data.json"],
+  "gemini_config": {
+    "temperature": 0.2,
+    "maxTokens": 4096
+  }
+}

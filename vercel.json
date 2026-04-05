@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/extract",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/review",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/scrape",
+      "schedule": "0 14 * * *"
+    }
+  ]
+}
