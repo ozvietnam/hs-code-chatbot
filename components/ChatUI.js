@@ -1066,6 +1066,19 @@ export default function ChatUI({ onDebugUpdate, onStatusChange, onNewChat }) {
       <div style={{
         flex: 1, overflowY: 'auto', padding: '16px 12px',
         background: 'var(--bg-primary)',
+      }}
+      onClick={(e) => {
+        // Event delegation: click on follow-up suggestion → fill input
+        const item = e.target.closest('.followup-item');
+        if (item && !loading) {
+          e.preventDefault();
+          // Extract clean text (strip bold markers, quotes)
+          const text = item.textContent.replace(/^[""\u201C\u201D]+|[""\u201C\u201D]+$/g, '').trim();
+          if (text) {
+            setInput(text);
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }
+        }
       }}>
         {messages.length === 0 && <EmptyState onSampleClick={handleSampleClick} />}
 

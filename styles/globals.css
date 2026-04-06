@@ -403,14 +403,21 @@ html, body {
   border: 1px solid rgba(59,130,246,0.1);
   font-size: 13px;
   color: #93c5fd;
-  cursor: default;
+  cursor: pointer;
   transition: all 0.15s;
   line-height: 1.5;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .bot-content .followup-item:hover {
-  background: rgba(59,130,246,0.1);
-  border-color: rgba(59,130,246,0.25);
+  background: rgba(59,130,246,0.15);
+  border-color: rgba(59,130,246,0.35);
   color: #bfdbfe;
+  transform: translateX(2px);
+}
+.bot-content .followup-item:active {
+  background: rgba(59,130,246,0.2);
+  transform: translateX(0);
 }
 .bot-content .followup-item strong {
   color: #93c5fd;
