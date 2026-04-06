@@ -332,6 +332,29 @@ html, body {
 .bot-content .citation strong {
   color: #cbd5e1;
 }
+/* Citation detail bullets (under 📌) */
+.bot-content .citation-list {
+  list-style: none;
+  padding: 4px 0 4px 12px;
+  margin: 0;
+  border-left: 2px solid rgba(148,163,184,0.2);
+}
+.bot-content .citation-detail {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 4px 0;
+  position: relative;
+}
+.bot-content .citation-detail::before {
+  content: '•';
+  color: #64748b;
+  position: absolute;
+  left: -12px;
+}
+.bot-content .citation-detail strong {
+  color: #cbd5e1;
+}
 
 /* --- Discovery alert: ⚡ changes detected --- */
 .bot-content .discovery-alert {
@@ -538,6 +561,122 @@ html, body {
   }
 }
 
+/* ========== LANDING STATS ========== */
+.landing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 10px;
+  text-align: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.stat-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(59,130,246,0.12);
+}
+
+.stat-number {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Comparison table */
+.compare-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 24px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.compare-col {
+  padding: 0;
+}
+
+.compare-header {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.compare-header-old {
+  background: rgba(239,68,68,0.08);
+  color: #f87171;
+}
+.compare-header-new {
+  background: rgba(16,185,129,0.08);
+  color: #34d399;
+}
+
+.compare-item {
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-top: 1px solid var(--border-color);
+}
+.compare-item-old {
+  color: var(--text-muted);
+  background: var(--bg-primary);
+}
+.compare-item-new {
+  color: var(--text-secondary);
+  background: var(--bg-card);
+}
+
+/* Section divider */
+.landing-divider {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  margin: 0 auto 20px;
+}
+
+.landing-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .stat-number { font-size: 18px; }
+  .stat-card { padding: 10px 6px; }
+  .stat-label { font-size: 10px; }
+  .compare-item { font-size: 11px; padding: 8px 10px; }
+  .compare-header { font-size: 12px; padding: 8px 10px; }
+}
+
 /* ========== APP LAYOUT (Chat + Dashboard) ========== */
 .app-layout {
   display: flex;
@@ -688,6 +827,14 @@ html, body {
   }
   .dashboard {
     width: 320px;
+  }
+  /* Move toggle above input area so it doesn't overlap send button */
+  .dash-toggle-btn {
+    bottom: 80px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
   }
 }
 

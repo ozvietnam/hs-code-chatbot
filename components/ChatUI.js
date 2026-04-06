@@ -58,13 +58,20 @@ function formatMessage(text) {
   const lines = text.split('\n');
   const processed = [];
   let inList = false;
+  let listType = ''; // 'followup' | 'citation' | 'expert'
+  let sectionContext = ''; // tracks last section: 'followup' | 'citation' | ''
+
+  function closeList() {
+    if (inList) { processed.push('</ul>'); inList = false; listType = ''; }
+  }
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
 
     // HS code verdict line: 🎯 **XXXX.XX.XX** — ...
     if (/^🎯/.test(line)) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
+      sectionContext = '';
       line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code-primary">$1</span>');
       line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       processed.push(`<div class="verdict-box">${line}</div>`);
@@ -73,7 +80,7 @@ function formatMessage(text) {
 
     // Tax line: Thuế: MFN X% | ACFTA X% | VAT X%
     if (/^Thu[eế]:/i.test(line) || /MFN.*ACFTA.*VAT/i.test(line)) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
       // Highlight tax rates
       line = line.replace(/(\d+(?:\.\d+)?%)/g, '<span class="tax-rate">$1</span>');
       line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -81,9 +88,10 @@ function formatMessage(text) {
       continue;
     }
 
-    // Source citation: 📌 Căn cứ:
+    // Source citation header: 📌 Căn cứ:
     if (/^📌/.test(line)) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
+      sectionContext = 'citation';
       line = formatInline(line);
       processed.push(`<div class="citation">${line}</div>`);
       continue;
@@ -91,15 +99,26 @@ function formatMessage(text) {
 
     // Discovery alert: ⚡ Lưu ý quan trọng / ⚠️
     if (/^[⚡⚠️]/.test(line) && /[Ll]ưu ý|quan trọng|thay đổi|ORANGE|RED/i.test(line)) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
+      sectionContext = '';
       line = formatInline(line);
       processed.push(`<div class="discovery-alert">${line}</div>`);
       continue;
     }
 
-    // Section headers: 🔍 / 💡 / ❓ / numbered items with emoji
-    if (/^[🔍💡❓🎯📊📋📦💰📝📜⚠️🏭]/.test(line) && line.length > 5) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+    // Follow-up section header: 💡 Bạn có thể hỏi thêm
+    if (/^💡/.test(line)) {
+      closeList();
+      sectionContext = 'followup';
+      line = formatInline(line);
+      processed.push(`<div class="section-header">${line}</div>`);
+      continue;
+    }
+
+    // Other section headers: 🔍 / ❓ / emoji sections
+    if (/^[🔍❓📊📋📦💰📝📜⚠️🏭]/.test(line) && line.length > 5) {
+      closeList();
+      sectionContext = '';
       line = formatInline(line);
       processed.push(`<div class="section-header">${line}</div>`);
       continue;
@@ -107,39 +126,71 @@ function formatMessage(text) {
 
     // Numbered list items with HS codes: 1. **XXXX.XX.XX** — ...
     if (/^\d+\.\s+\*\*\d{4}/.test(line)) {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
       line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code">$1</span>');
       line = formatInline(line);
       processed.push(`<div class="hs-option">${line}</div>`);
       continue;
     }
 
-    // Follow-up suggestion: → "text" or * "text"
-    if (/^\s*[→►•\-\*]\s*"/.test(line) || /^\s*[→►]\s/.test(line)) {
-      if (!inList) { processed.push('<ul class="followup-list">'); inList = true; }
-      line = line.replace(/^\s*[→►•\-\*]\s*/, '');
+    // Explicit follow-up marker: → "text" or ► "text"
+    if (/^\s*[→►]\s/.test(line)) {
+      if (!inList || listType !== 'followup') {
+        closeList();
+        processed.push('<ul class="followup-list">');
+        inList = true; listType = 'followup';
+      }
+      line = line.replace(/^\s*[→►]\s*/, '');
       line = formatInline(line);
       processed.push(`<li class="followup-item">${line}</li>`);
       continue;
     }
 
-    // Bullet list: - **XXXX** or * text
+    // Bullet list: context-aware (follow-up section vs citation section vs generic)
     if (/^\s*[\-\*]\s+/.test(line)) {
-      if (!inList) { processed.push('<ul class="expert-list">'); inList = true; }
-      line = line.replace(/^\s*[\-\*]\s+/, '');
+      const bulletContent = line.replace(/^\s*[\-\*]\s+/, '');
+
+      // Under 💡 section → follow-up items
+      if (sectionContext === 'followup') {
+        if (!inList || listType !== 'followup') {
+          closeList();
+          processed.push('<ul class="followup-list">');
+          inList = true; listType = 'followup';
+        }
+        processed.push(`<li class="followup-item">${formatInline(bulletContent)}</li>`);
+        continue;
+      }
+
+      // Under 📌 section → citation details
+      if (sectionContext === 'citation') {
+        if (!inList || listType !== 'citation') {
+          closeList();
+          processed.push('<ul class="citation-list">');
+          inList = true; listType = 'citation';
+        }
+        processed.push(`<li class="citation-detail">${formatInline(bulletContent)}</li>`);
+        continue;
+      }
+
+      // Generic bullets
+      if (!inList || listType !== 'expert') {
+        closeList();
+        processed.push('<ul class="expert-list">');
+        inList = true; listType = 'expert';
+      }
       // Highlight HS codes in bullets
-      line = line.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code">$1</span>');
-      line = formatInline(line);
-      processed.push(`<li>${line}</li>`);
+      let formatted = bulletContent.replace(/\*\*([\d.]+)\*\*/g, '<span class="hs-code">$1</span>');
+      formatted = formatInline(formatted);
+      processed.push(`<li>${formatted}</li>`);
       continue;
     }
 
-    // Close open list if normal line
-    if (inList && line.trim() !== '') { processed.push('</ul>'); inList = false; }
+    // Close open list if normal non-empty line
+    if (inList && line.trim() !== '') { closeList(); }
 
     // Empty line = paragraph break
     if (line.trim() === '') {
-      if (inList) { processed.push('</ul>'); inList = false; }
+      closeList();
       processed.push('<div class="spacer"></div>');
       continue;
     }
@@ -149,7 +200,7 @@ function formatMessage(text) {
     processed.push(`<div>${line}</div>`);
   }
 
-  if (inList) processed.push('</ul>');
+  closeList();
 
   const html = processed.join('');
   return DOMPurify.sanitize(html, {
@@ -598,29 +649,62 @@ function TypingIndicator() {
 }
 
 // --- Empty State ---
-function EmptyState({ onSampleClick }) {
-  const samplesFull = [
-    { text: 'C\u1EA3m bi\u1EBFn t\u1EEB d\u00F9ng cho xi lanh kh\u00ED n\u00E9n', type: 'customs' },
-    { text: 'V\u1EA3i polyester d\u1EC7t thoi', type: 'customs' },
-    { text: 'B\u00E1o gi\u00E1 d\u1ECBch v\u1EE5 khai b\u00E1o h\u1EA3i quan', type: 'pricing' },
-    { text: 'Th\u00F4ng t\u01B0 38 quy \u0111\u1ECBnh g\u00EC v\u1EC1 th\u1EE7 t\u1EE5c h\u1EA3i quan?', type: 'regulation' },
-    { text: 'M\u00E1y n\u00E9n kh\u00ED piston 3HP', type: 'customs' },
-    { text: 'Xin ch\u00E0o, chatbot n\u00E0y h\u1ED7 tr\u1EE3 g\u00EC?', type: 'care' },
-  ];
+// --- Animated Counter ---
+function AnimatedCounter({ end, duration = 1500 }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
 
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    const startTime = performance.now();
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutExpo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setCount(Math.floor(eased * end));
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, [end, duration]);
+
+  return <span className="stat-number">{count.toLocaleString('vi-VN')}</span>;
+}
+
+// --- Stats data ---
+const STATS = [
+  { value: 11871, label: 'm\u00E3 HS\nbi\u1EC3u thu\u1EBF 2026' },
+  { value: 529, label: 'TB-TCHQ\nti\u1EC1n l\u1EC7 ph\u00E2n lo\u1EA1i' },
+  { value: 9, label: 't\u1EA7ng d\u1EEF li\u1EC7u\nm\u1ED7i m\u00E3 HS' },
+  { value: 5455, label: 'SEN / bao g\u1ED3m\nkh\u00F4ng bao g\u1ED3m' },
+  { value: 57, label: 'm\u00E3 d\u1EC5 nh\u1EA7m\nc\u1EA3nh b\u00E1o r\u1EE7i ro' },
+  { value: 4, label: 'ngu\u1ED3n search\nsong song' },
+];
+
+const COMPARE = [
+  { old: 'Tra th\u1EE7 c\u00F4ng bi\u1EC3u thu\u1EBF PDF', new_: 'AI nh\u1EADn di\u1EC7n t\u1EEB m\u00F4 t\u1EA3, \u1EA3nh, PDF' },
+  { old: 'Kh\u00F4ng bi\u1EBFt ti\u1EC1n l\u1EC7 TCHQ', new_: '529 TB-TCHQ c\u1EA3nh b\u00E1o t\u1EF1 \u0111\u1ED9ng' },
+  { old: 'T\u1EF1 \u0111o\u00E1n thu\u1EBF su\u1EA5t', new_: 'Thu\u1EBF ch\u00EDnh x\u00E1c MFN/ACFTA/VAT' },
+  { old: 'Kh\u00F4ng bi\u1EBFt r\u1EE7i ro \u1EA5n \u0111\u1ECBnh', new_: '57 m\u00E3 d\u1EC5 nh\u1EA7m \u2014 c\u1EA3nh b\u00E1o s\u1EDBm' },
+];
+
+function EmptyState({ onSampleClick }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: '40px 16px', textAlign: 'center',
+      padding: '28px 16px', textAlign: 'center',
       animation: 'fadeIn 0.5s ease',
     }}>
+      {/* Hero */}
       <div style={{
-        width: 64, height: 64, borderRadius: 18,
+        width: 56, height: 56, borderRadius: 16,
         background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 24, boxShadow: '0 8px 32px rgba(59,130,246,0.3)',
+        marginBottom: 16, boxShadow: '0 8px 32px rgba(59,130,246,0.3)',
       }}>
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
           <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
           <line x1="12" y1="22.08" x2="12" y2="12"/>
@@ -628,34 +712,90 @@ function EmptyState({ onSampleClick }) {
       </div>
 
       <h2 style={{
-        fontSize: 22, fontWeight: 700, color: 'var(--text-primary)',
-        marginBottom: 8, letterSpacing: '-0.3px',
+        fontSize: 22, fontWeight: 800, color: 'var(--text-primary)',
+        marginBottom: 6, letterSpacing: '-0.3px',
       }}>
         HS Code VN Chatbot
       </h2>
       <p style={{
-        fontSize: 14, color: 'var(--text-muted)', maxWidth: 400,
-        lineHeight: 1.6, marginBottom: 24, padding: '0 8px',
+        fontSize: 13, color: 'var(--text-muted)', maxWidth: 380,
+        lineHeight: 1.5, marginBottom: 20,
       }}>
-        {TEXT.subtitle}
+        {"H\u1EC7 th\u1ED1ng ph\u00E2n lo\u1EA1i m\u00E3 HS th\u00F4ng minh \u2014 d\u1EEFa tr\u00EAn AI + c\u01A1 s\u1EDF d\u1EEF li\u1EC7u bi\u1EC3u thu\u1EBF 2026"}
       </p>
 
+      {/* Stats Counter */}
+      <div className="landing-stats">
+        {STATS.map((s, i) => (
+          <div key={i} className="stat-card">
+            <AnimatedCounter end={s.value} duration={1500 + i * 200} />
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Comparison */}
+      <div className="landing-section-title">{"So v\u1EDBi c\u00E1ch tra truy\u1EC1n th\u1ED1ng"}</div>
+      <div className="compare-table">
+        <div className="compare-col">
+          <div className="compare-header compare-header-old">{"\u274C C\u00E1ch c\u0169"}</div>
+          {COMPARE.map((c, i) => (
+            <div key={i} className="compare-item compare-item-old">{c.old}</div>
+          ))}
+        </div>
+        <div className="compare-col">
+          <div className="compare-header compare-header-new">{"\u2705 H\u1EC7 th\u1ED1ng m\u1EDBi"}</div>
+          {COMPARE.map((c, i) => (
+            <div key={i} className="compare-item compare-item-new">{c.new_}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature pills */}
       <div style={{
-        display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24,
+        display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 20,
       }}>
         {TEXT.features.map((f, i) => (
           <span key={i} style={{
-            padding: '5px 12px', borderRadius: 100,
+            padding: '4px 10px', borderRadius: 100,
             background: 'rgba(59,130,246,0.1)', color: '#60a5fa',
-            fontSize: 12, fontWeight: 600,
+            fontSize: 11, fontWeight: 600,
           }}>{f}</span>
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 560, width: '100%', padding: '0 8px' }}>
-        {samplesFull.map((q, i) => (
-          <button key={i} className="sample-btn" onClick={() => onSampleClick(q.text)}>
-            {q.text}
+      {/* Hot HS codes */}
+      <div className="landing-section-title">{"TOP TRA C\u1EEAU NHI\u1EC0U NH\u1EA4T"}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 480 }}>
+        {[
+          { hs: '8517.62.59', name: 'Thi\u1EBFt b\u1ECB thu ph\u00E1t v\u00F4 tuy\u1EBFn (b\u1ED9 \u0111\u00E0m, router WiFi)', query: 'thi\u1EBFt b\u1ECB thu ph\u00E1t v\u00F4 tuy\u1EBFn' },
+          { hs: '3926.90.99', name: 'S\u1EA3n ph\u1EA9m b\u1EB1ng nh\u1EF1a kh\u00E1c (linh ki\u1EC7n, ph\u1EE5 ki\u1EC7n)', query: 's\u1EA3n ph\u1EA9m b\u1EB1ng nh\u1EF1a' },
+          { hs: '8481.80.99', name: 'Van v\u00E0 thi\u1EBFt b\u1ECB t\u01B0\u01A1ng t\u1EF1 (van \u0111i\u1EC7n t\u1EEB, van kh\u00ED n\u00E9n)', query: 'van \u0111i\u1EC7n t\u1EEB kh\u00ED n\u00E9n' },
+        ].map((item, i) => (
+          <button
+            key={i}
+            onClick={() => onSampleClick(`Tra m\u00E3 HS: ${item.query}`)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 16px', borderRadius: 12,
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-card)',
+              cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.2s',
+              width: '100%',
+            }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(59,130,246,0.15)'; }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            <span style={{
+              fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
+              background: 'rgba(59,130,246,0.12)', color: '#60a5fa',
+              padding: '4px 8px', borderRadius: 6, flexShrink: 0,
+            }}>{item.hs}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+              {item.name}
+            </span>
+            <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 16, flexShrink: 0 }}>{'\u203A'}</span>
           </button>
         ))}
       </div>
