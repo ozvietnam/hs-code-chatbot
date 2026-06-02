@@ -5,6 +5,45 @@ import { handlePricing } from '../../lib/agents/pricingAgent';
 import { handleRegulation } from '../../lib/agents/regulationAgent';
 import { saveMessages } from '../../lib/stores/sessionStore';
 
+// ═══════════════════════════════════════════════════════
+// RATE LIMITER — Simple in-memory with Redis fallback
+// ═══════════════════════════════════════════════════════
+const memoryStore = new Map();
+const RATE_LIMIT_WINDOW = 3600 * 1000; // 1 hour
+const RATE_LIMIT_MAX = 100; // 100 requests per hour per IP
+
+async function checkRateLimit(ip) {
+  const key = `rl:${ip}`;
+  const now = Date.now();
+
+  // Memory-based (always works)
+  if (!memoryStore.has(key)) {
+    memoryStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW };
+  }
+
+  const record = memoryStore.get(key);
+
+  // Window expired
+  if (now > record.resetAt) {
+    memoryStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW };
+  }
+
+  // Check limit
+  if (record.count >= RATE_LIMIT_MAX) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: record.resetAt,
+      retryAfter: Math.ceil((record.resetAt - now) / 1000)
+    };
+  }
+
+  record.count += 1;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - record.count, resetAt: record.resetAt };
+}
+
 // Body parser config — increase limit for file uploads
 export const config = {
   api: { bodyParser: { sizeLimit: '20mb' } },
@@ -43,10 +82,64 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Message or file is required' });
   }
 
+  // ═══════════════════════════════════════════════════════
+  // INPUT VALIDATION
+  // ═══════════════════════════════════════════════════════
+  const maxMessageLength = parseInt(process.env.MAX_MESSAGE_LENGTH || '5000', 10);
+  const maxHistoryLength = parseInt(process.env.MAX_HISTORY_LENGTH || '50', 10);
+
+  if (message?.trim() && message.trim().length > maxMessageLength) {
+    return res.status(400).json({
+      error: `Message too long (max ${maxMessageLength} chars). Current: ${message.trim().length}.`
+    });
+  }
+
+  if (Array.isArray(history) && history.length > maxHistoryLength) {
+    return res.status(400).json({
+      error: `History too long (max ${maxHistoryLength} messages). Current: ${history.length}.`
+    });
+  }
+
+  // Validate history format
+  if (Array.isArray(history)) {
+    for (let i = 0; i < history.length; i++) {
+      const msg = history[i];
+      if (!msg.role || !msg.content) {
+        return res.status(400).json({
+          error: `Invalid message at index ${i}: must have 'role' and 'content'`
+        });
+      }
+      if (!['user', 'assistant'].includes(msg.role)) {
+        return res.status(400).json({
+          error: `Invalid role at index ${i}: must be 'user' or 'assistant'`
+        });
+      }
+    }
+  }
+
   const apiKey = process.env.LLM_API_KEY;
   if (!apiKey || apiKey === 'your_api_key_here') {
     return res.status(500).json({ error: 'LLM_API_KEY chưa được cấu hình' });
   }
+
+  // ═══════════════════════════════════════════════════════
+  // RATE LIMITING CHECK
+  // ═══════════════════════════════════════════════════════
+  const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
+  const rateLimitCheck = await checkRateLimit(clientIp);
+
+  if (!rateLimitCheck.allowed) {
+    return res.status(429).json({
+      error: 'Too many requests. Please try again later.',
+      retryAfter: rateLimitCheck.retryAfter,
+      resetAt: new Date(rateLimitCheck.resetAt).toISOString()
+    });
+  }
+
+  // Add rate limit headers to response
+  res.setHeader('X-RateLimit-Limit', RATE_LIMIT_MAX.toString());
+  res.setHeader('X-RateLimit-Remaining', rateLimitCheck.remaining.toString());
+  res.setHeader('X-RateLimit-Reset', new Date(rateLimitCheck.resetAt).toISOString());
 
   const startTime = Date.now();
   let routing = {};

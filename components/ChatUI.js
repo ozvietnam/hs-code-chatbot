@@ -281,15 +281,59 @@ function MessageActions({ content, onRetry, sessionId, messageIndex }) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Extract HS code and product name from bot response (WS-002: Enhanced feedback)
+  function extractInfoFromContent(htmlContent) {
+    const plain = htmlContent.replace(/<[^>]+>/g, '');
+
+    // Pattern 1: 🎯 **XXXX.XX.XX** — Product Name
+    const verdictMatch = plain.match(/🎯.*?\*\*(\d{4}\.\d{2}(?:\.\d{2})?)\*\*.*?—\s*([^\n]+)/);
+    if (verdictMatch) {
+      return {
+        hsCode: verdictMatch[1],
+        productName: verdictMatch[2].trim().substring(0, 100)
+      };
+    }
+
+    // Pattern 2: Standalone HS code like "8516.71.00"
+    const codeMatch = plain.match(/\b(\d{4}\.\d{2}(?:\.\d{2})?)\b/);
+    if (codeMatch) {
+      return {
+        hsCode: codeMatch[1],
+        productName: plain.substring(0, 100).split('\n')[0]
+      };
+    }
+
+    return null;
+  }
+
   function handleFeedback(rating) {
     const newRating = feedback === rating ? null : rating;
     setFeedback(newRating);
     if (newRating && sessionId) {
+      const extracted = extractInfoFromContent(content);
+      const feedbackData = {
+        sessionId,
+        messageIndex,
+        rating: newRating,
+        ...(newRating === 'up' && extracted && {
+          hsCode: extracted.hsCode,
+          productName: extracted.productName,
+          confidence: 0.95
+        })
+      };
+
       fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, messageIndex, rating: newRating }),
-      }).catch(() => {});
+        body: JSON.stringify(feedbackData),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.kb_saved) {
+            console.log(`✅ Learning saved: ${extracted?.productName} → ${extracted?.hsCode}`);
+          }
+        })
+        .catch(() => {});
     }
   }
 
